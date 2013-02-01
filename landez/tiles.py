@@ -15,6 +15,8 @@ from proj import GoogleProjection
 from cache import Disk, Dummy
 from sources import (MBTilesReader, TileDownloader, WMSReader, 
                      MapnikRenderer, ExtractionError, DownloadError)
+from optipng import png_optimize
+from distutils.spawn import find_executable
 
 has_pil = False
 try:
@@ -301,12 +303,15 @@ class MBTilesBuilder(TilesManager):
         metadata['maxzoom'] = self.zoomlevels[-1]
         metadata['bounds'] = '%s,%s,%s,%s' % tuple(self.bounds)
         metadata['center'] = '%s,%s,%s' % (lon, lat, middlezoom)
+        metadata['version'] = '1.0.0'
         metadatafile = os.path.join(self.tmp_dir, 'metadata.json')
         with open(metadatafile, 'w') as output:
             json.dump(metadata, output)
 
         # TODO: add UTF-Grid of last layer, if any
-
+	logger.info(_("Optimise PNG images"))
+	if find_executable('optipng'):
+	   png_optimize(self.tmp_dir)
         # Package it! 
         logger.info(_("Build MBTiles file '%s'.") % self.filepath)
         disk_to_mbtiles(self.tmp_dir, self.filepath)
